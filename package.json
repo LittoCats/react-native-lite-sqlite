@@ -1,0 +1,23 @@
+{
+  "name": "react-native-lite-sqlite",
+  "version": "0.0.1",
+  "description": "lightweight sqlite interface for react-native",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "react-native-lite-enqueue": "latest"
+  },
+  "keywords": [],
+  "author": "程巍巍",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LittoCats/react-native-lite-sqlite.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LittoCats/react-native-lite-sqlite/issues"
+  },
+  "homepage": "https://github.com/LittoCats/react-native-lite-sqlite#readme"
+}
