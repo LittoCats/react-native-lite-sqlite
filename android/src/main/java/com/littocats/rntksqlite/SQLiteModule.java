@@ -1,8 +1,10 @@
 package com.littocats.rntksqlite;
 
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.util.Log;
 
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -26,6 +28,17 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static android.database.DatabaseUtils.STATEMENT_ABORT;
+import static android.database.DatabaseUtils.STATEMENT_ATTACH;
+import static android.database.DatabaseUtils.STATEMENT_BEGIN;
+import static android.database.DatabaseUtils.STATEMENT_COMMIT;
+import static android.database.DatabaseUtils.STATEMENT_DDL;
+import static android.database.DatabaseUtils.STATEMENT_OTHER;
+import static android.database.DatabaseUtils.STATEMENT_PRAGMA;
+import static android.database.DatabaseUtils.STATEMENT_SELECT;
+import static android.database.DatabaseUtils.STATEMENT_UNPREPARED;
+import static android.database.DatabaseUtils.STATEMENT_UPDATE;
 
 /**
  * Created by Dragon-Li on 5/10/17.
@@ -88,7 +101,7 @@ public class SQLiteModule extends ReactContextBaseJavaModule{
 
     @Override
     public String getName() {
-        return "LittoSQLite";
+        return "LiteSQLite";
     }
 
     /**
@@ -119,6 +132,7 @@ public class SQLiteModule extends ReactContextBaseJavaModule{
             Object result = sqlite3.executeSQL(sql, params);
             promise.resolve(result);
         }catch (Exception e) {
+            Log.d(getName(), "" + sql);
             e.printStackTrace();
             promise.reject(e);
         }
@@ -163,47 +177,50 @@ public class SQLiteModule extends ReactContextBaseJavaModule{
 
             WritableArray results = new WritableNativeArray();
 
-            if (!sql.substring(0, 6).toUpperCase().startsWith("SELECT")) {
-                SQLiteStatement statement = mDatabase.compileStatement(sql);
-                statement.bindAllArgsAsStrings(binds.toArray(new String[]{}));
-                statement.execute();
-            }else{
-                Cursor cursor = mDatabase.rawQuery(sql, binds.toArray(new String[]{}));
-
-                if (cursor.getCount() > 0) {
-                    WritableArray row = new WritableNativeArray();
-                    int columnCount = cursor.getColumnCount();
-
-                    for (int column = 0; column < columnCount; column++) {
-                        row.pushString(cursor.getColumnName(column));
-                    }
-                    results.pushArray(row);
-
-                    do {
-                        cursor.moveToNext();
-                        row = new WritableNativeArray();
+            int sqlType = DatabaseUtils.getSqlStatementType(sql);
+            switch (sqlType) {
+                case STATEMENT_PRAGMA:
+                case STATEMENT_SELECT: {
+                    Cursor cursor = mDatabase.rawQuery(sql, binds.toArray(new String[]{}));
+                    if (cursor.getCount() > 0) {
+                        WritableArray row = new WritableNativeArray();
+                        int columnCount = cursor.getColumnCount();
 
                         for (int column = 0; column < columnCount; column++) {
-                            int type = cursor.getType(column);
-                            switch (type) {
-                                case Cursor.FIELD_TYPE_INTEGER: {
-                                    long num = cursor.getLong(column);
-                                    row.pushDouble(num);
-                                }break;
-                                case Cursor.FIELD_TYPE_FLOAT: {
-                                    double num = cursor.getDouble(column);
-                                    row.pushDouble(num);
-                                }break;
-                                default: {
-                                    String str = cursor.getString(column);
-                                    row.pushString(str);
-                                }break;
-                            }
+                            row.pushString(cursor.getColumnName(column));
                         }
                         results.pushArray(row);
-                    }while (!cursor.isLast());
+
+                        do {
+                            cursor.moveToNext();
+                            row = new WritableNativeArray();
+
+                            for (int column = 0; column < columnCount; column++) {
+                                int type = cursor.getType(column);
+                                switch (type) {
+                                    case Cursor.FIELD_TYPE_INTEGER: {
+                                        long num = cursor.getLong(column);
+                                        row.pushDouble(num);
+                                    }break;
+                                    case Cursor.FIELD_TYPE_FLOAT: {
+                                        double num = cursor.getDouble(column);
+                                        row.pushDouble(num);
+                                    }break;
+                                    default: {
+                                        String str = cursor.getString(column);
+                                        row.pushString(str);
+                                    }break;
+                                }
+                            }
+                            results.pushArray(row);
+                        }while (!cursor.isLast());
+                    }
+                }break;
+                default: {
+                    mDatabase.execSQL(sql, binds.toArray(new String[]{}));
                 }
             }
+
             return results;
         }
 

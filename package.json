@@ -1,6 +1,6 @@
 {
   "name": "react-native-lite-sqlite",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "lightweight sqlite interface for react-native",
   "main": "index.js",
   "scripts": {
